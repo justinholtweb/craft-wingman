@@ -19,6 +19,15 @@ class Settings extends PluginSettings
      */
     public string|array|null $modelPaths = null;
 
+    /**
+     * Registered models: handle (a PascalCase class-name-safe identifier) → model
+     * class and optional label. Edited in the CP later; `config/craft/wingman.php`
+     * for now.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    public array $models = [];
+
     /** Backfill on register. Create elements for existing model rows as soon as a model is registered. */
     public bool $autoBackfill = false;
 }

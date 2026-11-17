@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+/** Wingman spike fixture: an ordinary app model Craft knows nothing about. */
+class Customer extends Model
+{
+    protected $fillable = ['name', 'email', 'company'];
+
+    protected $hidden = ['email'];
+}
