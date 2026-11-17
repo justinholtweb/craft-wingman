@@ -12,7 +12,11 @@ use CraftCms\Cms\Plugin\PluginSettings;
  */
 class Settings extends PluginSettings
 {
-    /** Model directories. Directories scanned for Eloquent models, one per line (default: app/Models). */
+    /**
+     * Model directories. Directories scanned for Eloquent models, one per line (default: app/Models).
+     *
+     * @var string|list<string>|null
+     */
     public string|array|null $modelPaths = null;
 
     /** Backfill on register. Create elements for existing model rows as soon as a model is registered. */

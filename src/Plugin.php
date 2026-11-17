@@ -26,6 +26,7 @@ class Plugin extends BasePlugin
     public bool $hasCpSettings = true;
 
     public const string EDITION_LITE = 'lite';
+
     public const string EDITION_PRO = 'pro';
 
     #[Override]
