@@ -62,7 +62,6 @@ class Plugin extends BasePlugin
     public function boot(): void
     {
         $this->app->bind(Settings::class, fn (): Settings => $this->getSettings());
-        $this->registerCpRoutes(__DIR__.'/../routes/cp.php');
 
         $registry = $this->app->make(ModelRegistry::class);
         $eloquentElements = $this->app->make(EloquentElements::class);
