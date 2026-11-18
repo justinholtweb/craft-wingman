@@ -19,6 +19,9 @@ use SplFileInfo;
  */
 class ModelDiscovery
 {
+    /** Upper bound on PHP files read per discovery. */
+    public const int MAX_FILES = 5000;
+
     /**
      * @param  list<string>  $paths  Directories relative to the app root (or absolute).
      * @return array<class-string<Model>, string> Model class → suggested handle
@@ -27,16 +30,24 @@ class ModelDiscovery
     {
         $models = [];
 
-        foreach ($paths as $path) {
-            $dir = str_starts_with($path, '/') ? $path : base_path($path);
+        $scanned = 0;
 
-            if (! is_dir($dir)) {
+        foreach ($paths as $path) {
+            if (($dir = self::resolveDirectory($path)) === null) {
                 continue;
             }
 
             /** @var SplFileInfo $file */
             foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)) as $file) {
-                if ($file->getExtension() !== 'php' || ($class = self::declaredClass((string) file_get_contents($file->getPathname()))) === null) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                if (++$scanned > self::MAX_FILES) {
+                    break 2;
+                }
+
+                if (($class = self::declaredClass((string) file_get_contents($file->getPathname()))) === null) {
                     continue;
                 }
 
@@ -49,6 +60,26 @@ class ModelDiscovery
         ksort($models);
 
         return $models;
+    }
+
+    /**
+     * A model directory, resolved and confined to the project root (minus vendor/),
+     * or null. Model paths are admin settings, but a typo like `/` shouldn't scan
+     * the whole filesystem.
+     */
+    public static function resolveDirectory(string $path, ?string $root = null): ?string
+    {
+        $root = realpath($root ?? base_path());
+        $dir = realpath(str_starts_with($path, '/') ? $path : base_path($path));
+
+        if ($root === false || $dir === false || ! is_dir($dir)) {
+            return null;
+        }
+
+        $inside = $dir === $root || str_starts_with($dir, $root.DIRECTORY_SEPARATOR);
+        $inVendor = str_starts_with($dir.DIRECTORY_SEPARATOR, $root.DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR);
+
+        return $inside && ! $inVendor ? $dir : null;
     }
 
     /**

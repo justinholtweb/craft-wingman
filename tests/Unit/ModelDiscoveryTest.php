@@ -45,3 +45,15 @@ it('defaults model paths to app/Models', function () {
     $settings->modelPaths = "app/Models\n domain/Models ";
     expect($settings->modelPathList())->toBe(['app/Models', 'domain/Models']);
 });
+
+it('confines model directories to the project root, outside vendor', function () {
+    $root = sys_get_temp_dir().'/wingman-root-'.getmypid();
+    @mkdir("$root/app/Models", 0777, true);
+    @mkdir("$root/vendor/acme", 0777, true);
+
+    expect(ModelDiscovery::resolveDirectory("$root/app/Models", $root))->toBe(realpath("$root/app/Models"))
+        ->and(ModelDiscovery::resolveDirectory('/', $root))->toBeNull()
+        ->and(ModelDiscovery::resolveDirectory("$root/app/Models/../../..", $root))->toBeNull()
+        ->and(ModelDiscovery::resolveDirectory("$root/vendor/acme", $root))->toBeNull()
+        ->and(ModelDiscovery::resolveDirectory("$root/missing", $root))->toBeNull();
+});
