@@ -14,6 +14,19 @@ Core already ships the hard part: `EloquentElement` (an element proxying an app 
 element) and `EloquentElements::register()`. **But every model needs a PHP subclass, a field subclass and a
 registration call.** Wingman's job is everything around that.
 
+## Status
+- **2026-11-17 — phase 1 done.** Models registered in the CP (settings Table → project config), discovered
+  from `modelPaths` by token scan; validation rejects bad/duplicate handles, non-discovered classes,
+  identity/CP-URI collisions, removing or repointing a model that has elements. Boot registers each model
+  in its own try/catch (a bad one is logged and skipped, never fatal). Utilities → Wingman health table
+  (rows / linked / missing / orphaned) with per-model Backfill; `craft:wingman:status`,
+  `craft:wingman:backfill [handle] [--dry-run]`. 24 Pest tests; harness-verified.
+- **Bug found + fixed:** core derives `refHandle()` (the element-type *identity*) from the model's class
+  basename, so registering `App\Models\User` collided with Craft's users and crashed every request.
+  Wingman now derives identity + CP URI from its handle (`AppUser` → `app-user` / `app-users`).
+- Next: orphan cleanup action, queued backfill for big tables, non-admin permission test, CP rows checked
+  in a browser.
+
 ## Spike result (2026-11-17): runtime registration WORKS — full product is viable
 Tested in the Craft 6 harness against an ordinary `App\Models\Customer` (`tests/Harness/`).
 
@@ -40,8 +53,7 @@ creation; renaming means a migration.
 - CP index rows are client-rendered; not visually checked yet (needs a CP browser session).
 - Elements have no title (core uses `labelAttribute()`); Momentum serialises them as `{id,title,url}` →
   add Eloquent-element support to Momentum (non-`$hidden` model attributes).
-- Model discovery, the CP UI and project-config storage of `models` are next (phase 1); the spike reads
-  `config/craft/wingman.php`.
+
 
 ## Phases
 1. **CP registration (Lite).** Discover Eloquent models under `modelPaths`; pick one, choose title column,

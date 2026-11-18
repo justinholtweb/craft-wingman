@@ -41,6 +41,11 @@ class ModelRegistry
         $this->models[$handle] = ['handle' => $handle, 'modelClass' => $modelClass, 'label' => $label];
     }
 
+    public function remove(string $handle): void
+    {
+        unset($this->models[$handle]);
+    }
+
     public function has(string $handle): bool
     {
         return isset($this->models[$handle]);

@@ -1,0 +1,47 @@
+{# Utilities → Wingman #}
+<div class="grid gap-6">
+  {% if reports is empty %}
+    <p>{{ 'No models are registered yet. Add one in Settings → Plugins → Wingman.'|t('wingman') }}</p>
+  {% else %}
+    <table class="cp-table cp-table--aligned" id="wingman-health">
+      <thead>
+        <tr>
+          <th class="cell">{{ 'Model'|t('wingman') }}</th>
+          <th class="cell">{{ 'Rows'|t('wingman') }}</th>
+          <th class="cell">{{ 'With elements'|t('wingman') }}</th>
+          <th class="cell">{{ 'Missing elements'|t('wingman') }}</th>
+          <th class="cell">{{ 'Orphaned links'|t('wingman') }}</th>
+          <th class="cell"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+          <tr data-handle="{{ r.handle }}">
+            <th class="cell">
+              {{ r.label ?? r.handle }}
+              <div class="text-sm opacity-70"><code>{{ r.modelClass ?? '' }}</code></div>
+            </th>
+            {% if r.error %}
+              <td class="cell" colspan="5">{{ r.error }}</td>
+            {% else %}
+              <td class="cell">{{ r.rows|number }}</td>
+              <td class="cell">{{ r.linked|number }}</td>
+              <td class="cell" data-unlinked="{{ r.unlinked }}">{{ r.unlinked|number }}</td>
+              <td class="cell">{{ r.orphaned|number }}</td>
+              <td class="cell">
+                {% if r.unlinked > 0 %}
+                  <form method="post" action="{{ backfillUrl }}">
+                    {{ csrf_field() }}
+                    <input type="hidden" name="handle" value="{{ r.handle }}">
+                    <button type="submit" class="btn small">{{ 'Backfill'|t('wingman') }}</button>
+                  </form>
+                {% endif %}
+              </td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="text-sm opacity-70">{{ 'Backfill creates elements for rows that don’t have one. Large tables: run `php artisan craft:wingman:backfill` instead.'|t('wingman') }}</p>
+  {% endif %}
+</div>

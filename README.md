@@ -2,7 +2,7 @@
 
 Introduce your app's Eloquent models to Craft — elements, relation fields and reverse lookups, configured in the CP instead of in PHP.
 
-> **Status:** scaffold — nothing user-facing yet. See [PLAN.md](PLAN.md).
+> **Status:** phase 1 (CP registration, health, backfill) working in the Craft 6 harness. See [PLAN.md](PLAN.md).
 
 ## Requirements
 
