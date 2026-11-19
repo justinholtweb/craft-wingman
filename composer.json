@@ -59,6 +59,7 @@
         "sort-packages": true
     },
     "support": {
+        "docs": "https://justinholt.com/plugins/craft-wingman/docs",
         "issues": "https://github.com/justinholtweb/craft-wingman/issues",
         "source": "https://github.com/justinholtweb/craft-wingman"
     },
@@ -67,7 +68,7 @@
         "handle": "wingman",
         "developer": "Justin Holt",
         "developerUrl": "https://justinholt.com",
-        "documentationUrl": "https://github.com/justinholtweb/craft-wingman",
+        "documentationUrl": "https://justinholt.com/plugins/craft-wingman/docs",
         "changelogUrl": "https://raw.githubusercontent.com/justinholtweb/craft-wingman/main/CHANGELOG.md",
         "class": "JustinHoltWeb\\Wingman\\Plugin"
     }
