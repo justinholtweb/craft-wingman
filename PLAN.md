@@ -25,7 +25,7 @@ registration call.** Wingman's job is everything around that.
   basename, so registering `App\Models\User` collided with Craft's users and crashed every request.
   Wingman now derives identity + CP URI from its handle (`AppUser` → `app-user` / `app-users`).
 - **2026-11-18 — Lite and Pro done (overnight run).** See "Status by phase" below. 97 live harness checks
-  (`tests/Harness/check.sh`), 41 Pest tests, Larastan 6 + Pint + port-check green.
+  (`tests/Harness/check.sh`), 35 Pest tests, Larastan 6 + Pint + port-check green.
 
 ## Status by phase (2026-11-18)
 
