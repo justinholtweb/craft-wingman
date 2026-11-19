@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use CraftCms\Cms\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use JustinHoltWeb\Wingman\Elements\WingmanElement;
 use JustinHoltWeb\Wingman\Fields\WingmanField;
@@ -56,3 +57,22 @@ it('mints element and field classes for registered handles only', function () {
         ->and(is_subclass_of(ModelRegistry::fieldClass('Widget'), WingmanField::class))->toBeTrue()
         ->and(new ReflectionClass(ModelRegistry::elementClass('Widget'))->isFinal())->toBeTrue();
 });
+
+it('keeps per-model options and finds handles by model class', function () {
+    $registry = new ModelRegistry;
+    $registry->add('Widget', WingmanTestWidget::class, 'Widgets', ['labelColumn' => 'sku', 'trash' => 'keep', 'nav' => false]);
+
+    expect($registry->labelColumn('Widget'))->toBe('sku')
+        ->and($registry->trash('Widget'))->toBe('keep')
+        ->and($registry->showInNav('Widget'))->toBeFalse()
+        ->and($registry->handleForModel('\\'.WingmanTestWidget::class))->toBe('Widget')
+        ->and($registry->handleForModel('App\\Models\\Nope'))->toBeNull();
+});
+
+it('refuses an unknown trash behaviour', function () {
+    new ModelRegistry()->add('Widget', WingmanTestWidget::class, null, ['trash' => 'shred']);
+})->throws(InvalidArgumentException::class);
+
+it('refuses Craft’s own models', function () {
+    new ModelRegistry()->add('AppUser', User::class);
+})->throws(InvalidArgumentException::class);

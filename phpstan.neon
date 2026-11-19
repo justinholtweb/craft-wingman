@@ -8,3 +8,5 @@ parameters:
     ignoreErrors:
         # Core's Element declares ArrayAccess<string> while ElementInterface says int|string (Craft 6 beta.1).
         - identifier: generics.interfaceConflict
+        # HasCraftElements is for app models; the plugin itself never uses it.
+        - identifier: trait.unused

@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace JustinHoltWeb\Wingman;
 
 use CraftCms\Cms\Element\Eloquent\EloquentElements;
+use CraftCms\Cms\Gql\Events\GqlSchemaComponentsResolving;
+use CraftCms\Cms\Gql\GqlQueries;
+use CraftCms\Cms\Plugin\Events\PluginSettingsSaved;
 use CraftCms\Cms\Plugin\Plugin as BasePlugin;
+use CraftCms\Cms\Support\Facades\Plugins;
 use CraftCms\Cms\Ui\Controls\Table;
 use CraftCms\Cms\Ui\Controls\Textarea;
 use CraftCms\Cms\Ui\Nodes\Field;
 use CraftCms\Cms\Ui\Ui;
 use CraftCms\Cms\Ui\UiContext;
+use CraftCms\Cms\View\Events\TemplateGlobalsResolving;
 use Illuminate\Support\Facades\Log;
 use JustinHoltWeb\Wingman\Registry\GeneratedClassLoader;
 use JustinHoltWeb\Wingman\Registry\ModelDiscovery;
@@ -34,9 +39,21 @@ class Plugin extends BasePlugin
 
     public bool $hasCpSettings = true;
 
+    public static function isPro(): bool
+    {
+        return Plugins::getPlugin('wingman')?->is(self::EDITION_PRO) ?? false;
+    }
+
+    protected array $events = [
+        TemplateGlobalsResolving::class => Listeners\RegisterTemplateApi::class,
+        GqlSchemaComponentsResolving::class => Listeners\RegisterGqlComponents::class,
+        PluginSettingsSaved::class => Listeners\InvalidateGqlCaches::class,
+    ];
+
     protected array $commands = [
         Commands\StatusCommand::class,
         Commands\BackfillCommand::class,
+        Commands\CleanupCommand::class,
     ];
 
     protected array $utilities = [
@@ -63,15 +80,20 @@ class Plugin extends BasePlugin
     {
         $this->app->bind(Settings::class, fn (): Settings => $this->getSettings());
 
+        // GraphQL: `wingman…` queries per registered model, Pro only (checked inside).
+        $this->app->make(GqlQueries::class)->register(Gql\ModelQueries::class);
+
         $registry = $this->app->make(ModelRegistry::class);
         $eloquentElements = $this->app->make(EloquentElements::class);
 
         // One model at a time, each guarded: a model deleted from the app, or one whose
         // identity or CP URI collides with something registered since, must never take
         // the site down. Its elements degrade to Craft's missing-element handling.
-        foreach ($this->getSettings()->modelDefinitions() as ['handle' => $handle, 'modelClass' => $class, 'label' => $label]) {
+        foreach ($this->getSettings()->modelDefinitions() as $definition) {
+            $handle = $definition['handle'];
+
             try {
-                $registry->add($handle, $class, $label);
+                $registry->add($handle, $definition['modelClass'], $definition['label'], $definition);
                 $eloquentElements->register(ModelRegistry::elementClass($handle));
             } catch (Throwable $e) {
                 $registry->remove($handle);
@@ -102,12 +124,22 @@ class Plugin extends BasePlugin
                     'handle' => ['heading' => t('Handle', category: 'wingman'), 'type' => 'singleline', 'code' => true, 'placeholder' => 'Customer'],
                     'modelClass' => ['heading' => t('Eloquent model', category: 'wingman'), 'type' => 'select', 'options' => $options],
                     'label' => ['heading' => t('Label', category: 'wingman'), 'type' => 'singleline', 'placeholder' => t('Customers', category: 'wingman')],
+                    'labelColumn' => ['heading' => t('Label column', category: 'wingman'), 'type' => 'singleline', 'code' => true, 'placeholder' => 'name'],
+                    'trash' => ['heading' => t('Trashing an element', category: 'wingman'), 'type' => 'select', 'options' => [
+                        ['label' => t('Default', category: 'wingman'), 'value' => ''],
+                        ['label' => t('Keeps the row', category: 'wingman'), 'value' => ModelRegistry::TRASH_KEEP],
+                        ['label' => t('Soft-deletes the row', category: 'wingman'), 'value' => ModelRegistry::TRASH_SOFT_DELETE],
+                    ]],
+                    'nav' => ['heading' => t('Sidebar', category: 'wingman'), 'type' => 'select', 'options' => [
+                        ['label' => t('Show', category: 'wingman'), 'value' => ''],
+                        ['label' => t('Hide', category: 'wingman'), 'value' => 'hide'],
+                    ]],
                 ])
                 ->allowAdd()
                 ->allowDelete()
                 ->allowReorder()
                 ->addRowLabel(t('Add a model', category: 'wingman')))
-                ->instructions(t('Each model gets a control panel index, a relation field type and template queries. Handles become class names and can’t change once a model has elements.', category: 'wingman')),
+                ->instructions(t('Each model gets a control panel index, a relation field type and template queries. Handles become class names and can’t change once a model has elements. Label column: the column shown as each element’s name (default: `name`, then `title`). Trashing an element: by default a model with SoftDeletes is soft-deleted and any other is kept; deleting from the trash always deletes the row.', category: 'wingman')),
             Field::make(t('Model directories', category: 'wingman'), Textarea::make('modelPaths')->placeholder('app/Models'))
                 ->instructions(t('Where to look for Eloquent models, one directory per line, relative to the project root.', category: 'wingman')),
         ]);

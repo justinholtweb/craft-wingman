@@ -134,7 +134,23 @@ class ModelDiscovery
 
         $reflection = new ReflectionClass($class);
 
-        return $reflection->isInstantiable() && ! $reflection->isAnonymous();
+        return $reflection->isInstantiable() && ! $reflection->isAnonymous() && ! self::isCraftModel($class);
+    }
+
+    /**
+     * Craft's own models (users, sites, …) — or an app model extending one, like
+     * Laravel's `App\Models\User` in a Craft 6 project — already back Craft's own
+     * elements and records. Registering one would give the same rows a second element.
+     */
+    public static function isCraftModel(string $class): bool
+    {
+        foreach ([$class, ...array_values(class_parents($class) ?: [])] as $c) {
+            if (str_starts_with($c, 'CraftCms\\')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** `App\Models\Customer` → `Customer`, `App\Models\Shop\OrderLine` → `ShopOrderLine` */

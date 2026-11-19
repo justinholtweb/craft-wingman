@@ -18,30 +18,39 @@
         {% for r in reports %}
           <tr data-handle="{{ r.handle }}">
             <th class="cell">
-              {{ r.label ?? r.handle }}
+              {{ (r.label ?? r.handle)|t('site') }}
               <div class="text-sm opacity-70"><code>{{ r.modelClass ?? '' }}</code></div>
             </th>
             {% if r.error %}
-              <td class="cell" colspan="5">{{ r.error }}</td>
+              <td class="cell" colspan="5">{{ 'This model couldn’t be checked. See the log for details.'|t('wingman') }}</td>
             {% else %}
               <td class="cell">{{ r.rows|number }}</td>
               <td class="cell">{{ r.linked|number }}</td>
               <td class="cell" data-unlinked="{{ r.unlinked }}">{{ r.unlinked|number }}</td>
-              <td class="cell">{{ r.orphaned|number }}</td>
+              <td class="cell" data-orphaned="{{ r.orphaned }}">{{ r.orphaned|number }}</td>
               <td class="cell">
-                {% if r.unlinked > 0 %}
-                  <form method="post" action="{{ backfillUrl }}">
-                    {{ csrf_field() }}
-                    <input type="hidden" name="handle" value="{{ r.handle }}">
-                    <button type="submit" class="btn small">{{ 'Backfill'|t('wingman') }}</button>
-                  </form>
-                {% endif %}
+                <div class="flex gap-2">
+                  {% if r.unlinked > 0 %}
+                    <form method="post" action="{{ backfillUrl }}">
+                      {{ csrf_field() }}
+                      <input type="hidden" name="handle" value="{{ r.handle }}">
+                      <button type="submit" class="btn small">{{ r.unlinked > inlineLimit ? 'Queue backfill'|t('wingman') : 'Backfill'|t('wingman') }}</button>
+                    </form>
+                  {% endif %}
+                  {% if r.orphaned > 0 %}
+                    <form method="post" action="{{ cleanupUrl }}" onsubmit="return confirm({{ 'Delete {n} orphaned elements for good? Relations to them are removed too.'|t('wingman', {n: r.orphaned})|json_encode }})">
+                      {{ csrf_field() }}
+                      <input type="hidden" name="handle" value="{{ r.handle }}">
+                      <button type="submit" class="btn small">{{ 'Delete orphans'|t('wingman') }}</button>
+                    </form>
+                  {% endif %}
+                </div>
               </td>
             {% endif %}
           </tr>
         {% endfor %}
       </tbody>
     </table>
-    <p class="text-sm opacity-70">{{ 'Backfill creates elements for rows that don’t have one. Large tables: run `php artisan craft:wingman:backfill` instead.'|t('wingman') }}</p>
+    <p class="text-sm opacity-70">{{ 'Backfill creates elements for rows that don’t have one; more than {n} are queued. Orphans are elements whose row was deleted outside Eloquent. From the command line: `craft:wingman:backfill` and `craft:wingman:cleanup`.'|t('wingman', {n: inlineLimit}) }}</p>
   {% endif %}
 </div>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Auth\User;
 use JustinHoltWeb\Wingman\Registry\ModelDiscovery;
 use JustinHoltWeb\Wingman\Settings;
 
@@ -28,13 +29,17 @@ it('normalises CP table rows and config-file maps', function () {
     $settings = new Settings;
     $settings->models = [
         ['handle' => ' Customer ', 'modelClass' => '\App\Models\Customer', 'label' => ' Customers '],
-        'Invoice' => ['modelClass' => 'App\Models\Invoice'],
+        'Invoice' => ['modelClass' => 'App\Models\Invoice', 'labelColumn' => ' number ', 'trash' => 'softDelete', 'nav' => false],
         'junk',
+        ['handle' => 'Order', 'modelClass' => 'App\Models\Order', 'labelColumn' => '', 'trash' => '', 'nav' => 'hide'],
+        ['handle' => 'Note', 'modelClass' => 'App\Models\Note', 'nav' => ''],
     ];
 
     expect($settings->modelDefinitions())->toBe([
-        ['handle' => 'Customer', 'modelClass' => 'App\Models\Customer', 'label' => 'Customers'],
-        ['handle' => 'Invoice', 'modelClass' => 'App\Models\Invoice', 'label' => null],
+        ['handle' => 'Customer', 'modelClass' => 'App\Models\Customer', 'label' => 'Customers', 'labelColumn' => null, 'trash' => null, 'nav' => true],
+        ['handle' => 'Invoice', 'modelClass' => 'App\Models\Invoice', 'label' => null, 'labelColumn' => 'number', 'trash' => 'softDelete', 'nav' => false],
+        ['handle' => 'Order', 'modelClass' => 'App\Models\Order', 'label' => null, 'labelColumn' => null, 'trash' => null, 'nav' => false],
+        ['handle' => 'Note', 'modelClass' => 'App\Models\Note', 'label' => null, 'labelColumn' => null, 'trash' => null, 'nav' => true],
     ]);
 });
 
@@ -56,4 +61,13 @@ it('confines model directories to the project root, outside vendor', function ()
         ->and(ModelDiscovery::resolveDirectory("$root/app/Models/../../..", $root))->toBeNull()
         ->and(ModelDiscovery::resolveDirectory("$root/vendor/acme", $root))->toBeNull()
         ->and(ModelDiscovery::resolveDirectory("$root/missing", $root))->toBeNull();
+});
+
+class WingmanTestAppUser extends CraftCms\Cms\User\Models\User {}
+
+it('never offers Craft’s own models, or app models extending them', function () {
+    expect(ModelDiscovery::isCraftModel(WingmanTestAppUser::class))->toBeTrue()
+        ->and(ModelDiscovery::isCraftModel(CraftCms\Cms\User\Models\User::class))->toBeTrue()
+        ->and(ModelDiscovery::isCraftModel(User::class))->toBeFalse()
+        ->and(ModelDiscovery::isConcreteModel(WingmanTestAppUser::class))->toBeFalse();
 });

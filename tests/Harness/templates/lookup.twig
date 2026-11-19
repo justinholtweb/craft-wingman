@@ -1,0 +1,4 @@
+{# Lite: model → element. #}
+<ul>{% for c in craft.customers().orderBy("name").all() %}{% set el = wingman.element(c.getModel()) %}<li data-id="{{ el.id ?? 'none' }}">{{ el ? el.name : '' }}</li>{% endfor %}</ul>
+<p id="none">{{ wingman.element(null) is null ? 'null' : 'x' }}</p>
+<p id="invoice">{{ craft.wingmanInvoices().orderBy('number').one().number ?? '' }}</p>

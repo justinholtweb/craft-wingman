@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use JustinHoltWeb\Wingman\Concerns\HasCraftElements;
 
-/** Wingman spike fixture: an ordinary app model Craft knows nothing about. */
+/** Wingman harness fixture: an ordinary app model Craft knows nothing about. */
 class Customer extends Model
 {
+    use HasCraftElements;
+
     protected $fillable = ['name', 'email', 'company'];
 
     protected $hidden = ['email'];

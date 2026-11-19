@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace JustinHoltWeb\Wingman\Utilities;
 
 use CraftCms\Cms\Utility\Utility;
+use Illuminate\Support\Facades\Log;
+use JustinHoltWeb\Wingman\Http\Controllers\BackfillController;
 use JustinHoltWeb\Wingman\Registry\ModelRegistry;
 use JustinHoltWeb\Wingman\Sync\ModelHealth;
 use Override;
 use Throwable;
 
+use function CraftCms\Cms\cp_url;
 use function CraftCms\Cms\t;
 use function CraftCms\Cms\template;
 
@@ -53,13 +56,16 @@ class WingmanUtility extends Utility
             try {
                 $reports[] = $health->report($handle) + ['label' => $registry->label($handle), 'error' => null];
             } catch (Throwable $e) {
-                $reports[] = ['handle' => $handle, 'label' => $registry->label($handle), 'error' => $e->getMessage()];
+                Log::warning("Wingman couldn’t check {$handle}: {$e->getMessage()}");
+                $reports[] = ['handle' => $handle, 'label' => $registry->label($handle), 'error' => true];
             }
         }
 
         return template('wingman/_utility', [
             'reports' => $reports,
-            'backfillUrl' => \CraftCms\Cms\cp_url('wingman/backfill'),
+            'backfillUrl' => cp_url('wingman/backfill'),
+            'cleanupUrl' => cp_url('wingman/cleanup'),
+            'inlineLimit' => BackfillController::INLINE_LIMIT,
         ]);
     }
 }

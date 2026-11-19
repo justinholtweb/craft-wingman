@@ -22,13 +22,18 @@ class ModelRegistry
 
     public const string FIELD_NAMESPACE = 'JustinHoltWeb\\Wingman\\Generated\\Fields\\';
 
-    /** @var array<string, array{handle: string, modelClass: class-string<Model>, label: ?string}> */
+    public const string TRASH_KEEP = 'keep';
+
+    public const string TRASH_SOFT_DELETE = 'softDelete';
+
+    /** @var array<string, array{handle: string, modelClass: class-string<Model>, label: ?string, labelColumn: ?string, trash: ?string, nav: bool}> */
     private array $models = [];
 
     /**
      * @param  class-string<Model>|string  $modelClass
+     * @param  array{labelColumn?: ?string, trash?: ?string, nav?: bool}  $options
      */
-    public function add(string $handle, string $modelClass, ?string $label = null): void
+    public function add(string $handle, string $modelClass, ?string $label = null, array $options = []): void
     {
         if (! self::isValidHandle($handle)) {
             throw new InvalidArgumentException("Invalid Wingman model handle: $handle");
@@ -38,7 +43,24 @@ class ModelRegistry
             throw new InvalidArgumentException("$modelClass is not an Eloquent model.");
         }
 
-        $this->models[$handle] = ['handle' => $handle, 'modelClass' => $modelClass, 'label' => $label];
+        if (ModelDiscovery::isCraftModel($modelClass)) {
+            throw new InvalidArgumentException("$modelClass is one of Craft’s own models.");
+        }
+
+        $trash = $options['trash'] ?? null;
+
+        if ($trash !== null && ! in_array($trash, [self::TRASH_KEEP, self::TRASH_SOFT_DELETE], true)) {
+            throw new InvalidArgumentException("Invalid trash behaviour: $trash");
+        }
+
+        $this->models[$handle] = [
+            'handle' => $handle,
+            'modelClass' => $modelClass,
+            'label' => $label,
+            'labelColumn' => $options['labelColumn'] ?? null,
+            'trash' => $trash,
+            'nav' => $options['nav'] ?? true,
+        ];
     }
 
     public function remove(string $handle): void
@@ -68,6 +90,37 @@ class ModelRegistry
     public function label(string $handle): ?string
     {
         return $this->models[$handle]['label'] ?? null;
+    }
+
+    /** The column chosen in the CP as the element's label, if any. */
+    public function labelColumn(string $handle): ?string
+    {
+        return $this->models[$handle]['labelColumn'] ?? null;
+    }
+
+    /** `keep`, `softDelete`, or null for core's default. */
+    public function trash(string $handle): ?string
+    {
+        return $this->models[$handle]['trash'] ?? null;
+    }
+
+    public function showInNav(string $handle): bool
+    {
+        return $this->models[$handle]['nav'] ?? true;
+    }
+
+    /** The handle a model class is registered under, if it is. */
+    public function handleForModel(string $modelClass): ?string
+    {
+        $modelClass = ltrim($modelClass, '\\');
+
+        foreach ($this->models as $handle => $model) {
+            if ($model['modelClass'] === $modelClass) {
+                return $handle;
+            }
+        }
+
+        return null;
     }
 
     public static function elementClass(string $handle): string

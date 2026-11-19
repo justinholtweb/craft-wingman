@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace JustinHoltWeb\Wingman\Elements;
 
+use CraftCms\Cms\Cp\Data\NavItem;
+use CraftCms\Cms\Element\Conditions\Contracts\ElementConditionInterface;
 use CraftCms\Cms\Element\Eloquent\EloquentElement;
+use CraftCms\Cms\Element\Eloquent\ModelTrashBehavior;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use JustinHoltWeb\Wingman\Conditions\WingmanCondition;
 use JustinHoltWeb\Wingman\Registry\ModelRegistry;
 use Override;
 use RuntimeException;
+
+use function CraftCms\Cms\t;
 
 /**
  * Base for the generated per-model element classes. Everything core asks of an
@@ -36,24 +42,73 @@ abstract class WingmanElement extends EloquentElement
         return self::refHandleFor(static::wingmanHandle());
     }
 
+    /**
+     * The label is site content, written by an admin, so it's translated like other
+     * user-defined labels: through the `site` category (`lang/fr/site.php`).
+     */
     #[Override]
     public static function displayName(): string
     {
         $label = app(ModelRegistry::class)->label(static::wingmanHandle());
 
-        return $label !== null ? Str::singular($label) : Str::headline(static::wingmanHandle());
+        return t($label !== null ? Str::singular($label) : Str::headline(static::wingmanHandle()), category: 'site');
     }
 
     #[Override]
     public static function pluralDisplayName(): string
     {
-        return app(ModelRegistry::class)->label(static::wingmanHandle()) ?? Str::plural(static::displayName());
+        $label = app(ModelRegistry::class)->label(static::wingmanHandle());
+
+        return t($label ?? Str::plural(Str::headline(static::wingmanHandle())), category: 'site');
+    }
+
+    /** The column chosen in the CP, else core's default (`name`, then `title`). */
+    #[Override]
+    public static function labelAttribute(): ?string
+    {
+        $column = app(ModelRegistry::class)->labelColumn(static::wingmanHandle());
+
+        return $column !== null && in_array($column, static::modelColumns(), true) ? $column : parent::labelAttribute();
+    }
+
+    #[Override]
+    public static function trashBehavior(): ModelTrashBehavior
+    {
+        return match (app(ModelRegistry::class)->trash(static::wingmanHandle())) {
+            ModelRegistry::TRASH_SOFT_DELETE => ModelTrashBehavior::SoftDelete,
+            ModelRegistry::TRASH_KEEP => ModelTrashBehavior::Keep,
+            default => parent::trashBehavior(),
+        };
+    }
+
+    /** Left out of the sidebar when “Show in the sidebar” is off; the index still works. */
+    #[Override]
+    public static function cpNavItem(): ?NavItem
+    {
+        return app(ModelRegistry::class)->showInNav(static::wingmanHandle()) ? parent::cpNavItem() : null;
     }
 
     #[Override]
     public static function relationFieldType(): ?string
     {
         return ModelRegistry::fieldClass(static::wingmanHandle());
+    }
+
+    /**
+     * The label column's value, so `{{ customer }}` prints “Grace Hopper”, not
+     * “Customer 27” (Eloquent elements have no title of their own).
+     */
+    #[Override]
+    public function __toString(): string
+    {
+        return $this->uiLabel() ?? parent::__toString();
+    }
+
+    /** Craft's element condition, plus (Pro) a rule per listed model attribute. */
+    #[Override]
+    public static function createCondition(): ElementConditionInterface
+    {
+        return new WingmanCondition(static::class);
     }
 
     public static function wingmanHandle(): string

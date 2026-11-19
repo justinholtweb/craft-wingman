@@ -1,0 +1,2 @@
+{# Pro: reverse lookups — entries relating to each customer, through the `customers` field and through any Wingman field. #}
+<ul>{% for c in craft.customers().orderBy("name").all() %}<li data-id="{{ c.id }}">{{ c }}:{{ wingman.relatedEntries(c, 'customers').ids()|join(',') }}/{{ wingman.relatedEntries(c.getModel()).count() }}</li>{% endfor %}</ul>
