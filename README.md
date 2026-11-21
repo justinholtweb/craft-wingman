@@ -4,7 +4,7 @@ Introduce your app's Eloquent models to Craft — elements, relation fields, rev
 
 > [!WARNING]
 > **Craft 6 only, and in beta.** Wingman is a native **Craft CMS 6** plugin. Craft 6 is still in beta,
-> and so is Wingman (`6.0.0-beta.1`). Try it on development and staging sites first and **use caution on
+> and so is Wingman (`6.0.0-beta.2`). Try it on development and staging sites first and **use caution on
 > production**: keep backups, and expect changes between betas. It does not run on Craft 5.
 
 Docs: [justinholt.com/plugins/craft-wingman](https://justinholt.com/plugins/craft-wingman/docs/). See [PLAN.md](PLAN.md).

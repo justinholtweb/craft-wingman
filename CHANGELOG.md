@@ -1,6 +1,6 @@
 # Release Notes for Wingman
 
-## 6.0.0-beta.1 - Unreleased
+## 6.0.0-beta.2 - 2026-11-21
 
 > Wingman is for **Craft CMS 6**, which is in beta. Use caution on production.
 

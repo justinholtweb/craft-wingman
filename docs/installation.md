@@ -6,7 +6,7 @@ summary: Requirements, the Craft 6 beta caution, install, and your first model.
 ---
 
 > **Craft 6 only, and still in beta.** Wingman is a native **Craft CMS 6** plugin. Craft 6 is
-> still in beta, and so is Wingman (`6.0.0-beta.1`). Try it on development and staging sites
+> still in beta, and so is Wingman (`6.0.0-beta.2`). Try it on development and staging sites
 > first, and **use caution before running it on a production site**: keep backups, and expect
 > things to change between betas. It does not run on Craft 5.
 
